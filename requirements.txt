@@ -1,0 +1,25 @@
+ahk==0.13.0
+appdirs==1.4.4
+attrs @ file:///opt/conda/conda-bld/attrs_1642510447205/work
+black==19.10b0
+certifi==2021.5.30
+click==8.0.3
+Jinja2==3.0.3
+keyboard==0.13.5
+MarkupSafe==2.0.1
+mss @ file:///home/conda/feedstock_root/build_artifacts/python-mss_1604174763378/work
+mypy-extensions==0.4.3
+numpy==1.19.5
+opencv-contrib-python==4.5.5.62
+opencv-python==4.5.5.62
+pathspec==0.7.0
+pynput==1.7.6
+pywin32==303
+regex @ file:///C:/ci/regex_1629302333945/work
+six==1.16.0
+toml @ file:///tmp/build/80754af9/toml_1616166611790/work
+typed-ast @ file:///C:/ci/typed-ast_1624953776872/work
+typing-extensions @ file:///tmp/build/80754af9/typing_extensions_1631814937681/work
+win32core==221.36
+win32gui==221.6
+wincertstore==0.2
