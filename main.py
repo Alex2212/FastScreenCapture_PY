@@ -7,6 +7,7 @@ import cv2 as cv
 from ctypes import *
 from time import sleep
 from mss import mss
+import win32.lib.win32con as win32con
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
@@ -53,65 +54,179 @@ def releaseclick(button):
     sleep(delay())
 
 
-def on_change(value):
-    print(value)
-
-
-def bot():
-
+def trigger():
     start_time = time.time()
     mon = {"top": 423, "left": 953 - 1920, "width": 100, "height": 100}
     with mss() as sct:
         while True:
-            last_time = time.time()
+            if user32.GetKeyState(win32con.VK_LCONTROL) >= 65408:
+                last_time = time.time()
+                img = sct.grab(mon)
+                img = np.array(img)
+                result = img.copy()
+                img = cv.cvtColor(img, cv.COLOR_BGR2HSV)
+
+                lower1 = np.array([0, 100, 0])
+                upper1 = np.array([5, 255, 255])
+
+                lower2 = np.array([160, 100, 20])
+                upper2 = np.array([179, 255, 255])
+
+                lower_mask = cv.inRange(img, lower1, upper1)
+                upper_mask = cv.inRange(img, lower2, upper2)
+
+                full_mask = lower_mask + upper_mask
+
+                result = cv.bitwise_and(result, result, mask=full_mask)
+                loop1 = True
+                loop2 = True
+                cv.imshow("test", result)
+                # cv.createTrackbar("slider", "test", 0, 100, on_change)
+
+                # print(f"{len(np.array(img))},{len(np.array(img)[0])}")
+                for i in range(0, 10):
+                    if loop1:
+                        for j in range(0, 10):
+                            if loop2:
+                                triggerB, triggerG, triggerR, triggerA = np.array(result)[i][j]
+                                # print(f"[R:{triggerR}, G:{triggerG}, B:{triggerB}]")
+                                if (
+                                    # triggerR in range(200, 240 + 1)
+                                    # and triggerG in range(20, 91)
+                                    # and triggerB in range(20, 96)
+                                    triggerR
+                                    > 180
+                                ):
+                                    print(f"SEND CLICK")
+                                    click(mouse.left)
+                                    # releaseclick(mouse.left)
+                                    # holdclick(mouse.left)
+                                    loop1 = False
+                                    loop2 = False
+                            else:
+
+                                break
+                    else:
+                        break
+                print("speed in fps: {0}".format((time.time() - last_time) ** (-1)))
+            if cv.waitKey(1) == ord("-"):
+                cv.destroyAllWindows()
+                break
+
+    print("Done!")
+
+
+def debug():
+    # test hsv values with or
+    cv.namedWindow("params")
+    cv.moveWindow("params", -1920 + 5, 50)
+    cv.resizeWindow("params", 640, 320)
+
+    cv.createTrackbar("hue_min", "params", -180, 180, empty)
+    cv.createTrackbar("hue_max", "params", 180, 180, empty)
+
+    cv.createTrackbar("val_min", "params", 0, 255, empty)
+    cv.createTrackbar("val_max", "params", 255, 255, empty)
+
+    cv.createTrackbar("sat_min", "params", 0, 255, empty)
+    cv.createTrackbar("sat_max", "params", 255, 255, empty)
+
+    #
+
+    while True:
+
+        img = cv.imread("hsv.png")
+        img = np.array(img)
+        imgHSV = cv.cvtColor(img, cv.COLOR_BGR2HSV)
+
+        hue_min = cv.getTrackbarPos("hue_min", "params")
+        hue_max = cv.getTrackbarPos("hue_max", "params")
+
+        sat_min = cv.getTrackbarPos("sat_min", "params")
+        sat_max = cv.getTrackbarPos("sat_max", "params")
+
+        val_min = cv.getTrackbarPos("val_min", "params")
+        val_max = cv.getTrackbarPos("val_max", "params")
+
+        lower_mask = np.array([hue_min, sat_min, val_min])
+        upper_mask = np.array([hue_max, sat_max, val_max])
+
+        mask = cv.inRange(imgHSV, lower_mask, upper_mask)
+
+        result = cv.bitwise_or(img, img, mask=mask)
+
+        cv.namedWindow("result")
+        cv.imshow("result", result)
+
+        if cv.waitKey(1) == ord("-"):
+            cv.destroyAllWindows()
+            break
+
+    print("Done!")
+
+
+def empty(arg):
+    pass
+
+
+def aim():
+    # debug values
+
+    cv.namedWindow("params")
+    cv.moveWindow("params", -1920 + 5, 50)
+    cv.resizeWindow("params", 640, 600)
+    cv.createTrackbar("threshold1", "params", 150, 255, empty)
+    cv.createTrackbar("threshold2", "params", 150, 255, empty)
+
+    cv.createTrackbar("hue_min", "params", 0, 180, empty)
+    cv.createTrackbar("hue_max", "params", 180, 180, empty)
+
+    cv.createTrackbar("val_min", "params", 0, 255, empty)
+    cv.createTrackbar("val_max", "params", 255, 255, empty)
+
+    cv.createTrackbar("sat_min", "params", 0, 255, empty)
+    cv.createTrackbar("sat_max", "params", 255, 255, empty)
+
+    #
+    area = 140
+
+    mon = {"top": int(429 - area / 2), "left": int(959 - 1920 - area / 2), "width": area, "height": area}
+    with mss() as sct:
+        while True:
+            # if user32.GetKeyState(win32con.VK_LCONTROL) >= 65408:
+
             img = sct.grab(mon)
             img = np.array(img)
-            result = img.copy()
-            img = cv.cvtColor(img, cv.COLOR_BGR2HSV)
+            imgHSV = cv.cvtColor(img, cv.COLOR_BGR2HSV)
 
-            lower1 = np.array([0, 100, 0])
-            upper1 = np.array([5, 255, 255])
+            hue_min = cv.getTrackbarPos("hue_min", "params")
+            hue_max = cv.getTrackbarPos("hue_max", "params")
 
-            lower2 = np.array([160, 100, 20])
-            upper2 = np.array([179, 255, 255])
+            sat_min = cv.getTrackbarPos("sat_min", "params")
+            sat_max = cv.getTrackbarPos("sat_max", "params")
 
-            lower_mask = cv.inRange(img, lower1, upper1)
-            upper_mask = cv.inRange(img, lower2, upper2)
+            val_min = cv.getTrackbarPos("val_min", "params")
+            val_max = cv.getTrackbarPos("val_max", "params")
 
-            full_mask = lower_mask + upper_mask
+            lower_mask = np.array([hue_min, sat_min, val_min])
+            upper_mask = np.array([hue_max, sat_max, val_max])
 
-            result = cv.bitwise_and(result, result, mask=full_mask)
-            loop1 = True
-            loop2 = True
-            cv.imshow("test", result)
-            # cv.createTrackbar("slider", "test", 0, 100, on_change)
+            mask = cv.inRange(imgHSV, lower_mask, upper_mask)
 
-            # print(f"{len(np.array(img))},{len(np.array(img)[0])}")
-            for i in range(0, 10):
-                if loop1:
-                    for j in range(0, 10):
-                        if loop2:
-                            triggerB, triggerG, triggerR, triggerA = np.array(result)[i][j]
-                            # print(f"[R:{triggerR}, G:{triggerG}, B:{triggerB}]")
-                            if (
-                                # triggerR in range(200, 240 + 1)
-                                # and triggerG in range(20, 91)
-                                # and triggerB in range(20, 96)
-                                triggerR
-                                > 180
-                            ):
-                                print(f"SEND CLICK")
-                                click(mouse.left)
-                                # releaseclick(mouse.left)
-                                # holdclick(mouse.left)
-                                loop1 = False
-                                loop2 = False
-                        else:
+            result = cv.bitwise_and(img, img, mask=mask)
 
-                            break
-                else:
-                    break
-            print("speed in fps: {0}".format((time.time() - last_time) ** (-1)))
+            cv.namedWindow("original")
+            cv.moveWindow("original", -200, 100)
+            cv.imshow("original", img)
+
+            cv.namedWindow("result")
+            cv.moveWindow("result", -200, 300)
+            cv.imshow("result", result)
+
+            cv.namedWindow("mask")
+            cv.moveWindow("mask", -200, 500)
+            cv.imshow("mask", mask)
+
             if cv.waitKey(1) == ord("-"):
                 cv.destroyAllWindows()
                 break
@@ -121,4 +236,4 @@ def bot():
 
 if __name__ == "__main__":
     # WindowCapture.list_window_names()
-    Thread(target=bot).start()
+    Thread(target=aim).start()
