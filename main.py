@@ -2,15 +2,15 @@ import numpy as np
 import os
 import time
 from threading import Thread
-from pynput import keyboard
+
 import cv2 as cv
 from ctypes import *
 from time import sleep
 from mss import mss
 import win32.lib.win32con as win32con
-import math
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
 
 user32 = windll.user32
 kernel32 = windll.kernel32
@@ -58,10 +58,18 @@ def releaseclick(button):
 def trigger():
     start_time = time.time()
     area = 12
-    mon = {"top": int(429 - area / 2), "left": int(959 - 1920 - area / 2), "width": area, "height": area}
+    mon = {
+        "top": int(429 - area / 2),
+        "left": int(959 - 1920 - area / 2),
+        "width": area,
+        "height": area,
+    }
     with mss() as sct:
         while True:
-            if user32.GetKeyState(win32con.VK_RBUTTON) >= 65408 or user32.GetKeyState(win32con.VK_SPACE) >= 65408:
+            if (
+                user32.GetKeyState(win32con.VK_RBUTTON) >= 65408
+                or user32.GetKeyState(win32con.VK_SPACE) >= 65408
+            ):
                 last_time = time.time()
                 img = sct.grab(mon)
                 img = np.array(img)
@@ -76,7 +84,9 @@ def trigger():
 
                 grayImage = cv.cvtColor(borderClamp, cv.COLOR_BGR2GRAY)
 
-                (thresh, blackAndWhiteImage) = cv.threshold(grayImage, 70, 255, cv.THRESH_BINARY)
+                blackAndWhiteImage = cv.threshold(grayImage, 70, 255, cv.THRESH_BINARY)[
+                    1
+                ]
                 cv.imshow("test", blackAndWhiteImage)
                 draw("test", blackAndWhiteImage, -100, 60)
                 draw("test2", img, -100, 30)
@@ -84,7 +94,9 @@ def trigger():
 
                 isFullBlack = np.all(binMatrix == 0)
                 isFullWhite = np.all(binMatrix == 255)
-                print(f"EXPR: is full white: {isFullWhite}, is full black: {isFullBlack}")
+                print(
+                    f"EXPR: is full white: {isFullWhite}, is full black: {isFullBlack}"
+                )
                 if isFullBlack == isFullWhite:
                     click(mouse.left)
                 else:
@@ -172,7 +184,12 @@ def debug2():
     #
     area = 140
 
-    mon = {"top": int(429 - area / 2), "left": int(959 - 1920 - area / 2), "width": area, "height": area}
+    mon = {
+        "top": int(429 - area / 2),
+        "left": int(959 - 1920 - area / 2),
+        "width": area,
+        "height": area,
+    }
     with mss() as sct:
         while True:
             # if user32.GetKeyState(win32con.VK_LCONTROL) >= 65408:
@@ -227,7 +244,12 @@ def aim():
     kernel = np.ones((3, 3), np.float32) / 9
     area = 200
 
-    mon = {"top": int(429 - area / 2), "left": int(959 - 1920 - area / 2), "width": area, "height": area}
+    mon = {
+        "top": int(429 - area / 2),
+        "left": int(959 - 1920 - area / 2),
+        "width": area,
+        "height": area,
+    }
     with mss() as sct:
         while True:
             if user32.GetKeyState(win32con.VK_LCONTROL) >= 65408 or True:
@@ -246,10 +268,14 @@ def aim():
 
                 grayImage = cv.cvtColor(borderClamp, cv.COLOR_BGR2GRAY)
 
-                (thresh, blackAndWhiteImage) = cv.threshold(grayImage, 70, 255, cv.THRESH_BINARY)
+                (thresh, blackAndWhiteImage) = cv.threshold(
+                    grayImage, 70, 255, cv.THRESH_BINARY
+                )
                 draw("result", blackAndWhiteImage, -300, 400)
 
-                contours, hierarchy = cv.findContours(blackAndWhiteImage, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
+                contours, hierarchy = cv.findContours(
+                    blackAndWhiteImage, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE
+                )
                 # debug only
                 cx = 0
                 cy = 0
@@ -278,4 +304,5 @@ def aim():
 
 if __name__ == "__main__":
     # WindowCapture.list_window_names()
+    print("Code is running ...")
     Thread(target=trigger).start()
