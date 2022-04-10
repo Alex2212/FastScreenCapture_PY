@@ -8,6 +8,7 @@ from ctypes import *
 from time import sleep
 from mss import mss
 import win32.lib.win32con as win32con
+import math
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
@@ -37,10 +38,10 @@ def move(x, y):
 
 # Presses and releases mouse
 def click(button):
+    sleep(delay())
     user32.mouse_event(button[0], 0, 0, 0, 0)
     sleep(delay())
     user32.mouse_event(button[1], 0, 0, 0, 0)
-    sleep(delay())
 
 
 # Holds a mouse button
@@ -56,58 +57,39 @@ def releaseclick(button):
 
 def trigger():
     start_time = time.time()
-    mon = {"top": 423, "left": 953 - 1920, "width": 100, "height": 100}
+    area = 12
+    mon = {"top": int(429 - area / 2), "left": int(959 - 1920 - area / 2), "width": area, "height": area}
     with mss() as sct:
         while True:
-            if user32.GetKeyState(win32con.VK_LCONTROL) >= 65408:
+            if user32.GetKeyState(win32con.VK_RBUTTON) >= 65408 or user32.GetKeyState(win32con.VK_SPACE) >= 65408:
                 last_time = time.time()
                 img = sct.grab(mon)
                 img = np.array(img)
-                result = img.copy()
-                img = cv.cvtColor(img, cv.COLOR_BGR2HSV)
+                imgHSV = cv.cvtColor(img, cv.COLOR_BGR2HSV)
 
-                lower1 = np.array([0, 100, 0])
-                upper1 = np.array([5, 255, 255])
+                lower_mask = np.array([144, 160, 149])
+                upper_mask = np.array([155, 255, 255])
 
-                lower2 = np.array([160, 100, 20])
-                upper2 = np.array([179, 255, 255])
+                mask = cv.inRange(imgHSV, lower_mask, upper_mask)
 
-                lower_mask = cv.inRange(img, lower1, upper1)
-                upper_mask = cv.inRange(img, lower2, upper2)
+                borderClamp = cv.bitwise_and(img, img, mask=mask)
 
-                full_mask = lower_mask + upper_mask
+                grayImage = cv.cvtColor(borderClamp, cv.COLOR_BGR2GRAY)
 
-                result = cv.bitwise_and(result, result, mask=full_mask)
-                loop1 = True
-                loop2 = True
-                cv.imshow("test", result)
-                # cv.createTrackbar("slider", "test", 0, 100, on_change)
+                (thresh, blackAndWhiteImage) = cv.threshold(grayImage, 70, 255, cv.THRESH_BINARY)
+                cv.imshow("test", blackAndWhiteImage)
+                draw("test", blackAndWhiteImage, -100, 60)
+                draw("test2", img, -100, 30)
+                binMatrix = np.array(blackAndWhiteImage)
 
-                # print(f"{len(np.array(img))},{len(np.array(img)[0])}")
-                for i in range(0, 10):
-                    if loop1:
-                        for j in range(0, 10):
-                            if loop2:
-                                triggerB, triggerG, triggerR, triggerA = np.array(result)[i][j]
-                                # print(f"[R:{triggerR}, G:{triggerG}, B:{triggerB}]")
-                                if (
-                                    # triggerR in range(200, 240 + 1)
-                                    # and triggerG in range(20, 91)
-                                    # and triggerB in range(20, 96)
-                                    triggerR
-                                    > 180
-                                ):
-                                    print(f"SEND CLICK")
-                                    click(mouse.left)
-                                    # releaseclick(mouse.left)
-                                    # holdclick(mouse.left)
-                                    loop1 = False
-                                    loop2 = False
-                            else:
+                isFullBlack = np.all(binMatrix == 0)
+                isFullWhite = np.all(binMatrix == 255)
+                print(f"EXPR: is full white: {isFullWhite}, is full black: {isFullBlack}")
+                if isFullBlack == isFullWhite:
+                    click(mouse.left)
+                else:
+                    pass
 
-                                break
-                    else:
-                        break
                 print("speed in fps: {0}".format((time.time() - last_time) ** (-1)))
             if cv.waitKey(1) == ord("-"):
                 cv.destroyAllWindows()
@@ -169,7 +151,7 @@ def empty(arg):
     pass
 
 
-def aim():
+def debug2():
     # debug values
 
     cv.namedWindow("params")
@@ -234,6 +216,66 @@ def aim():
     print("Done!")
 
 
+def draw(windowName, img, x, y):
+    cv.namedWindow(windowName)
+    cv.moveWindow(windowName, x, y)
+    cv.imshow(windowName, img)
+
+
+def aim():
+    # debug values
+    kernel = np.ones((3, 3), np.float32) / 9
+    area = 200
+
+    mon = {"top": int(429 - area / 2), "left": int(959 - 1920 - area / 2), "width": area, "height": area}
+    with mss() as sct:
+        while True:
+            if user32.GetKeyState(win32con.VK_LCONTROL) >= 65408 or True:
+
+                img = sct.grab(mon)
+                img = np.array(img)
+
+                imgHSV = cv.cvtColor(img, cv.COLOR_BGR2HSV)
+
+                lower_mask = np.array([135, 110, 124])
+                upper_mask = np.array([160, 255, 255])
+
+                mask = cv.inRange(imgHSV, lower_mask, upper_mask)
+
+                borderClamp = cv.bitwise_and(img, img, mask=mask)
+
+                grayImage = cv.cvtColor(borderClamp, cv.COLOR_BGR2GRAY)
+
+                (thresh, blackAndWhiteImage) = cv.threshold(grayImage, 70, 255, cv.THRESH_BINARY)
+                draw("result", blackAndWhiteImage, -300, 400)
+
+                contours, hierarchy = cv.findContours(blackAndWhiteImage, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
+                # debug only
+                cx = 0
+                cy = 0
+                for i in contours:
+                    area = cv.contourArea(i)
+                    if area >= 50 and area <= 90:
+                        M = cv.moments(i)
+                        if M["m00"] != 0:
+                            cx = int(M["m10"] / M["m00"])
+                            cy = int(M["m01"] / M["m00"])
+                            cv.drawContours(img, [i], -1, (0, 255, 0), 2)
+                            cv.circle(img, (cx, cy), 7, (0, 0, 255), -1)
+
+                    print(f"x: {cx} y: {cy}")
+
+                # only move mouse if relative coords are != (0,0)
+
+                draw("final", img, -300, 100)
+
+            if cv.waitKey(1) == ord("-"):
+                cv.destroyAllWindows()
+                break
+
+    print("Done!")
+
+
 if __name__ == "__main__":
     # WindowCapture.list_window_names()
-    Thread(target=aim).start()
+    Thread(target=trigger).start()
